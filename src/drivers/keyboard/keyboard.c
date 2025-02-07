@@ -54,13 +54,21 @@ extern void idt_load();
 /* ===================== KEYBOARD INTERRUPT HANDLER ===================== */
 
 #define KEYBOARD_DATA_PORT 0x60
+#define VGA_WIDTH 80
 
 unsigned int cursor_row = 0;
 unsigned int cursor_col = 0;
 
+void move_cursor(uint16_t pos) {
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (uint8_t)(pos & 0xFF));
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+}
+
 void update_cursor() {
-    print(" ", cursor_row, cursor_col, 0x0F);
-    print("|", cursor_row, cursor_col, 0x0F);
+    uint16_t pos = cursor_row * VGA_WIDTH + cursor_col;
+    move_cursor(pos);
 }
 
 extern void keyboard_entry();
@@ -73,7 +81,6 @@ void keyboard_interrupt_handler() {
 
     if (scancode != 0xE0 && !(scancode & 0x80)) {
         if (scancode == 0x1C) {  // Enter tuşu
-            print(" ", cursor_row, cursor_col, 0x0F);
             cursor_col = 0;
             cursor_row++;
             if (cursor_row >= 25) {
